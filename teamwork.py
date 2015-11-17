@@ -1,4 +1,6 @@
+from datetime import timedelta, time, date
 import requests
+import json
 
 
 class Teamwork(object):
@@ -23,7 +25,7 @@ class Teamwork(object):
                 url, auth=(self.api_key, ''), params=payload)
         if request_type == 'post':
             request = requests.post(
-                url, auth=(self.api_key, ''), params=payload)
+                url, auth=(self.api_key, ''), data=payload)
 
         if request.json().get('STATUS') == 'OK':
             return request.json()
@@ -34,7 +36,15 @@ class Teamwork(object):
         return self.request(path, params, data, request_type='get')
 
     def post(self, path=None, params=None, data=None):
-        return self.request(path, params, data, request_type='post')
+        url = self.get_base_url()
+        if path:
+            url = "%s/%s" % (url, path)
+
+        request = requests.post(
+            url, auth=(self.api_key, ''), data=data)
+        if request.status_code != 201:
+            raise RuntimeError("Not Valid request")
+        return request
 
     def get_base_url(self):
         return 'https://%s' % self.domain
@@ -67,7 +77,42 @@ class Teamwork(object):
                           params=payload)
         return result.get('time-entries')
 
-    def save_project_time(self, project_id, data):
+    def save_project_time_entry(self, project_id, entry_date, duration,
+                                person_id, description, start_time):
+        """
+        project_id: Project ID
+        date: datetime.date Date of time entry
+        duration: datetime.timedelta Duration
+        person_id: Integer Id of person
+        description: String Id of person
+        start_time: datetime.timedelta
+        """
+        duration_hours, duration_minutes = timedelta_to_hours_minutes(duration)
+
+        data = {
+                    "time-entry": {
+                        "description": description,
+                        "person-id": person_id,
+                        "date": entry_date.strftime('%Y%m%d'),
+                        "time": time_to_hhmm(start_time),
+                        "hours": duration_hours,
+                        "minutes": duration_minutes,
+                        "isbillable": "1"
+                    }
+                }
+        result = self.post(
+            '/projects/%i/time_entries.json' % project_id,
+            data=json.dumps(data))
+        return result
+
+    def get_time_entry(self, time_id):
+        result = self.get('time_entries/%i.json' % time_id)
+        return result.get('time-entry')
+
+    def update_time_entry(self):
+        pass
+
+    def delete_time_entry(self):
         pass
 
     def update_project_time(self, project_id, data):
@@ -75,6 +120,14 @@ class Teamwork(object):
 
     def get_project_user_times(self, project_id, user_id):
         pass
+
+
+def timedelta_to_hours_minutes(td):
+    return td.seconds // 3600, (td.seconds // 60) % 60
+
+
+def time_to_hhmm(time_input):
+    return '%i:%i' % (time_input.hour, time_input.minute)
 
 
 class User(object):
