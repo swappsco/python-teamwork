@@ -1,4 +1,3 @@
-from datetime import timedelta, time, date
 import requests
 import json
 
@@ -13,29 +12,23 @@ class Teamwork(object):
         self.account = self.authenticate()
         self.user = User(self.account.get('userId'))
 
-    def request(self, path=None, params=None, data=None, request_type='get'):
+    def get(self, path=None, params=None, data=None):
         url = self.get_base_url()
         if path:
             url = "%s/%s" % (url, path)
         payload = {}
         if params:
             payload = params
-        if request_type == 'get':
-            request = requests.get(
-                url, auth=(self.api_key, ''), params=payload)
-        if request_type == 'post':
-            request = requests.post(
-                url, auth=(self.api_key, ''), data=payload)
+
+        request = requests.get(
+            url, auth=(self.api_key, ''), params=payload)
 
         if request.json().get('STATUS') == 'OK':
             return request.json()
         else:
             raise RuntimeError("Not Valid request")
 
-    def get(self, path=None, params=None, data=None):
-        return self.request(path, params, data, request_type='get')
-
-    def post(self, path=None, params=None, data=None):
+    def post(self, path=None, data=None):
         url = self.get_base_url()
         if path:
             url = "%s/%s" % (url, path)
