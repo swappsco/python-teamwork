@@ -1,4 +1,3 @@
-from datetime import timedelta, time, date
 import requests
 import json
 
@@ -13,29 +12,23 @@ class Teamwork(object):
         self.account = self.authenticate()
         self.user = User(self.account.get('userId'))
 
-    def request(self, path=None, params=None, data=None, request_type='get'):
+    def get(self, path=None, params=None, data=None):
         url = self.get_base_url()
         if path:
             url = "%s/%s" % (url, path)
         payload = {}
         if params:
             payload = params
-        if request_type == 'get':
-            request = requests.get(
-                url, auth=(self.api_key, ''), params=payload)
-        if request_type == 'post':
-            request = requests.post(
-                url, auth=(self.api_key, ''), data=payload)
+
+        request = requests.get(
+            url, auth=(self.api_key, ''), params=payload)
 
         if request.json().get('STATUS') == 'OK':
             return request.json()
         else:
             raise RuntimeError("Not Valid request")
 
-    def get(self, path=None, params=None, data=None):
-        return self.request(path, params, data, request_type='get')
-
-    def post(self, path=None, params=None, data=None):
+    def post(self, path=None, data=None):
         url = self.get_base_url()
         if path:
             url = "%s/%s" % (url, path)
@@ -44,7 +37,7 @@ class Teamwork(object):
             url, auth=(self.api_key, ''), data=data)
         if request.status_code != 201:
             raise RuntimeError("Not Valid request")
-        return request
+        return request.text
 
     def get_base_url(self):
         return 'https://%s' % self.domain
@@ -78,12 +71,12 @@ class Teamwork(object):
         return result.get('time-entries')
 
     def save_project_time_entry(self, project_id, entry_date, duration,
-                                person_id, description, start_time):
+                                user_id, description, start_time):
         """
         project_id: Project ID
         date: datetime.date Date of time entry
         duration: datetime.timedelta Duration
-        person_id: Integer Id of person
+        user_id: Integer Id of person
         description: String Id of person
         start_time: datetime.timedelta
         """
@@ -92,7 +85,7 @@ class Teamwork(object):
         data = {
                     "time-entry": {
                         "description": description,
-                        "person-id": person_id,
+                        "person-id": user_id,
                         "date": entry_date.strftime('%Y%m%d'),
                         "time": time_to_hhmm(start_time),
                         "hours": duration_hours,
