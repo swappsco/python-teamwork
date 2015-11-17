@@ -37,7 +37,7 @@ class Teamwork(object):
             url, auth=(self.api_key, ''), data=data)
         if request.status_code != 201:
             raise RuntimeError("Not Valid request")
-        return request
+        return request.text
 
     def get_base_url(self):
         return 'https://%s' % self.domain
@@ -71,12 +71,12 @@ class Teamwork(object):
         return result.get('time-entries')
 
     def save_project_time_entry(self, project_id, entry_date, duration,
-                                person_id, description, start_time):
+                                user_id, description, start_time):
         """
         project_id: Project ID
         date: datetime.date Date of time entry
         duration: datetime.timedelta Duration
-        person_id: Integer Id of person
+        user_id: Integer Id of person
         description: String Id of person
         start_time: datetime.timedelta
         """
@@ -85,7 +85,7 @@ class Teamwork(object):
         data = {
                     "time-entry": {
                         "description": description,
-                        "person-id": person_id,
+                        "person-id": user_id,
                         "date": entry_date.strftime('%Y%m%d'),
                         "time": time_to_hhmm(start_time),
                         "hours": duration_hours,
