@@ -7,5 +7,8 @@ setup(name='python-teamwork',
       author='Andres Gonzalez',
       author_email='andresgz@gmail.com',
       license='MIT',
-      packages=['python-teamwork'],
+      packages=['teamwork'],
+      install_requires=[
+          'requests',
+      ],
       zip_safe=False)
