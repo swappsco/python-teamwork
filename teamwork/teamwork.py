@@ -5,28 +5,27 @@ import json
 class Teamwork(object):
     """
     Basic wrapper to work with the Teamwork API
+    Based on Teamwork API: http://developer.teamwork.com/
     """
     def __init__(self, domain, api_key):
-        self.domain = domain
-        self.api_key = api_key
-        self.account = self.authenticate()
-        self.user = User(self.account.get('userId'))
+        self._domain = domain
+        self._api_key = api_key
+        self._account = self.authenticate()
+        self._user = User(self._account.get('userId'))
 
     def get(self, path=None, params=None, data=None):
         url = self.get_base_url()
         if path:
             url = "%s/%s" % (url, path)
         payload = {}
+
         if params:
             payload = params
 
         request = requests.get(
-            url, auth=(self.api_key, ''), params=payload)
+            url, auth=(self._api_key, ''), params=payload)
 
-        if request.json().get('STATUS') == 'OK':
-            return request.json()
-        else:
-            raise RuntimeError("Not Valid request")
+        return request.json()
 
     def post(self, path=None, data=None):
         url = self.get_base_url()
@@ -34,13 +33,13 @@ class Teamwork(object):
             url = "%s/%s" % (url, path)
 
         request = requests.post(
-            url, auth=(self.api_key, ''), data=data)
+            url, auth=(self._api_key, ''), data=data)
         if request.status_code != 201:
             raise RuntimeError("Not Valid request")
         return request.text
 
     def get_base_url(self):
-        return 'https://%s' % self.domain
+        return 'https://%s' % self._domain
 
     def authenticate(self):
         result = self.get('authenticate.json')
@@ -53,16 +52,27 @@ class Teamwork(object):
     def get_project_times(self, project_id, user_id=None, start_date=None,
                           end_date=None):
         """
-        Get project time entries
-        user_id: User id
-        start_date: Start date
-        end_date: End Date
+        Get project time entries from project
+
+        http://developer.teamwork.com/timetracking#retrieve_all_time
+        GET /projects/{project_id}/time_entries.json
+
+        :param: user_id: User id
+        :param: start_date: Start date
+        :param: end_date: End Date
+
+        :type user_id: int
+        :type start_date: datetime.datetime
+        :type end_date: datetime.datetime
+
+        :returns: List of time entries
+        :rtype: list
         """
         payload = {}
         if start_date:
-            payload['fromdate'] = start_date
+            payload['fromdate'] = start_date.strftime('%Y%m%d')
         if end_date:
-            payload['todate'] = end_date
+            payload['todate'] = end_date.strftime('%Y%m%d')
         if user_id:
             payload['userId'] = user_id
 
@@ -73,12 +83,12 @@ class Teamwork(object):
     def save_project_time_entry(self, project_id, entry_date, duration,
                                 user_id, description, start_time):
         """
-        project_id: Project ID
-        date: datetime.date Date of time entry
-        duration: datetime.timedelta Duration
-        user_id: Integer Id of person
-        description: String Id of person
-        start_time: datetime.timedelta
+        :param: project_id: Project ID
+        :param: date: datetime.date Date of time entry
+        :param: duration: datetime.timedelta Duration
+        :param: user_id: Integer Id of person
+        :param: description: String Id of person
+        :param: start_time: datetime.timedelta
         """
         duration_hours, duration_minutes = timedelta_to_hours_minutes(duration)
 
